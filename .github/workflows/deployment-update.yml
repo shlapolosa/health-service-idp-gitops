@@ -2,7 +2,7 @@ name: GitOps Deployment Update
 
 on:
   repository_dispatch:
-    types: [update-deployments]
+    types: [update-deployments, simple-update]
 
 permissions:
   contents: write
@@ -32,9 +32,16 @@ jobs:
           echo "Source commit: $SOURCE_COMMIT"
           echo "Registry: $REGISTRY"
           
-          # Parse deployments from payload
-          DEPLOYMENTS='${{ toJson(github.event.client_payload.deployments) }}'
-          echo "Deployments: $DEPLOYMENTS"
+          # Handle different event types
+          if [ "${{ github.event.action }}" = "simple-update" ]; then
+            echo "📋 Processing simple-update event"
+            COMMIT_SHA="${{ github.event.client_payload.commit_sha }}"
+          else
+            echo "📋 Processing update-deployments event"
+            # Parse deployments from payload
+            DEPLOYMENTS='${{ toJson(github.event.client_payload.deployments) }}'
+            echo "Deployments: $DEPLOYMENTS"
+          fi
           
           # Update each service's manifest
           IFS=',' read -ra SERVICE_ARRAY <<< "$SERVICES"
@@ -42,13 +49,32 @@ jobs:
           for service in "${SERVICE_ARRAY[@]}"; do
             echo "🔄 Updating $service manifest..."
             
-            # Extract image for this service from deployments JSON
-            NEW_IMAGE=$(echo "$DEPLOYMENTS" | jq -r ".$service.image // empty")
-            COMMIT_SHA=$(echo "$DEPLOYMENTS" | jq -r ".$service.commit // empty")
-            
-            if [ -z "$NEW_IMAGE" ]; then
-              echo "⚠️ No image found for service $service in deployments payload"
-              continue
+            if [ "${{ github.event.action }}" = "simple-update" ]; then
+              # Simple update: construct image from registry and commit
+              NEW_IMAGE="${REGISTRY}/$service:$COMMIT_SHA"
+            else
+              # Complex update: extract from deployments JSON
+              echo "🔍 Parsing deployments JSON for service: $service"
+              echo "Raw deployments: $DEPLOYMENTS"
+              
+              # Parse the JSON string (it comes as a string, not object)
+              DEPLOYMENTS_PARSED=$(echo "$DEPLOYMENTS" | jq -r '. // empty')
+              if [ "$DEPLOYMENTS_PARSED" = "null" ] || [ -z "$DEPLOYMENTS_PARSED" ]; then
+                # Try parsing as raw string
+                DEPLOYMENTS_PARSED="$DEPLOYMENTS"
+              fi
+              
+              NEW_IMAGE=$(echo "$DEPLOYMENTS_PARSED" | jq -r ".\"$service\".image // empty")
+              COMMIT_SHA=$(echo "$DEPLOYMENTS_PARSED" | jq -r ".\"$service\".commit // empty")
+              
+              echo "Extracted - Image: $NEW_IMAGE, Commit: $COMMIT_SHA"
+              
+              if [ -z "$NEW_IMAGE" ] || [ "$NEW_IMAGE" = "null" ]; then
+                echo "⚠️ No image found for service $service in deployments payload"
+                echo "Available keys in deployments:"
+                echo "$DEPLOYMENTS_PARSED" | jq -r 'keys[]?' 2>/dev/null || echo "Failed to parse keys"
+                continue
+              fi
             fi
             
             echo "📝 Updating $service to image: $NEW_IMAGE"
