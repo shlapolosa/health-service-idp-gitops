@@ -1,0 +1,29 @@
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Kubernetes temporary files
+*.kubeconfig
+kubeconfig*
+
+# Helm
+charts/*/charts/
+charts/*/requirements.lock
+charts/*/Chart.lock
+
+# ArgoCD temporary files
+*.argoproj.io
+
+# Local development
+.env
+.env.local
