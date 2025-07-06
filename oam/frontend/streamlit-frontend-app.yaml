@@ -117,8 +117,3 @@ spec:
       type: apply-component
       properties:
         component: streamlit-frontend-knative-service
-    - name: verify-frontend-ready
-      type: wait-for-healthy
-      properties:
-        component: streamlit-frontend-knative-service
-        timeout: 600s
