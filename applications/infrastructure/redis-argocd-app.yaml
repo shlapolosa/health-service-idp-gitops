@@ -12,9 +12,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/shlapolosa/health-service-idp
+    repoURL: https://github.com/shlapolosa/health-service-idp-gitops
     targetRevision: HEAD
-    path: oam-applications/infrastructure
+    path: oam/infrastructure
     directory:
       include: "redis-app.yaml"
   destination:
