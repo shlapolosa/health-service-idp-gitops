@@ -79,7 +79,37 @@ jobs:
             
             echo "📝 Updating $service to image: $NEW_IMAGE"
             
-            # Find OAM application file for the service
+            # Handle slack-api-server specifically (direct Kubernetes manifests)
+            if [ "$service" = "slack-api-server" ]; then
+              echo "🔧 Handling slack-api-server direct deployment"
+              
+              DEPLOYMENT_FILE="environments/prod/integration/deployment.yaml"
+              RBAC_FILE="environments/prod/integration/rbac.yaml"
+              
+              if [ -f "$DEPLOYMENT_FILE" ]; then
+                echo "📄 Updating deployment image: $DEPLOYMENT_FILE"
+                sed -i "s|image: .*/slack-api-server:.*|image: $NEW_IMAGE|g" "$DEPLOYMENT_FILE"
+                echo "✅ Updated slack-api-server deployment image"
+              fi
+              
+              # Handle secret substitution if secrets are provided
+              PERSONAL_ACCESS_TOKEN="${{ github.event.client_payload.personal_access_token }}"
+              SLACK_SIGNING_SECRET="${{ github.event.client_payload.slack_signing_secret }}"
+              
+              if [ -f "$RBAC_FILE" ] && [ ! -z "$PERSONAL_ACCESS_TOKEN" ] && [ ! -z "$SLACK_SIGNING_SECRET" ]; then
+                echo "🔐 Updating secrets in rbac.yaml"
+                # Create a temporary file with substituted secrets
+                sed -e "s|\${PERSONAL_ACCESS_TOKEN}|${PERSONAL_ACCESS_TOKEN}|g" \
+                    -e "s|\${SLACK_SIGNING_SECRET}|${SLACK_SIGNING_SECRET}|g" \
+                    "$RBAC_FILE" > "${RBAC_FILE}.tmp"
+                mv "${RBAC_FILE}.tmp" "$RBAC_FILE"
+                echo "✅ Updated slack-api-server secrets"
+              fi
+              
+              continue
+            fi
+            
+            # Find OAM application file for other services
             OAM_FILE="oam/frontend/${service}-app.yaml"
             if [ ! -f "$OAM_FILE" ]; then
               # Try other possible locations
