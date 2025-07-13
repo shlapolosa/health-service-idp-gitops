@@ -16,6 +16,17 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          role-session-name: GitOpsDeployment
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name ${{ secrets.EKS_CLUSTER_NAME }}
+
       - name: Update deployment manifests
         run: |
           echo "🚀 Processing GitOps deployment update..."
@@ -97,13 +108,15 @@ jobs:
               SLACK_SIGNING_SECRET="${{ github.event.client_payload.slack_signing_secret }}"
               
               if [ -f "$RBAC_FILE" ] && [ ! -z "$PERSONAL_ACCESS_TOKEN" ] && [ ! -z "$SLACK_SIGNING_SECRET" ]; then
-                echo "🔐 Updating secrets in rbac.yaml"
-                # Create a temporary file with substituted secrets
+                echo "🔐 Applying secrets directly to cluster (not committing to repo for security)"
+                # Apply secrets directly to cluster without committing to repo
                 sed -e "s|\${PERSONAL_ACCESS_TOKEN}|${PERSONAL_ACCESS_TOKEN}|g" \
                     -e "s|\${SLACK_SIGNING_SECRET}|${SLACK_SIGNING_SECRET}|g" \
-                    "$RBAC_FILE" > "${RBAC_FILE}.tmp"
-                mv "${RBAC_FILE}.tmp" "$RBAC_FILE"
-                echo "✅ Updated slack-api-server secrets"
+                    "$RBAC_FILE" | kubectl apply -f -
+                echo "✅ Applied slack-api-server secrets directly to cluster"
+                
+                # Revert the rbac.yaml file to keep placeholders in repo
+                git checkout -- "$RBAC_FILE" || true
               fi
               
               continue
