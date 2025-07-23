@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-analytics-service-config
+  namespace: health-service-idp
+data:
+  APP_ENV: "production"
+  SERVICE_NAME: "user-analytics-service"
