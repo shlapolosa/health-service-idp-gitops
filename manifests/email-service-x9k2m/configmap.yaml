@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: email-service-x9k2m-config
+  namespace: health-service-idp
+data:
+  APP_ENV: "production"
+  SERVICE_NAME: "email-service-x9k2m"
