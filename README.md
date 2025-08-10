@@ -1,65 +1,26 @@
-# Visual Architecture Tool - GitOps Repository
+# health-service-idp GitOps Repository
 
-This repository contains deployment manifests, ArgoCD applications, and OAM applications for the Visual Architecture Maintenance Tool.
+This repository contains the GitOps deployment manifests for the health-service-idp application container.
 
-## Repository Structure
+## Structure
 
-```
-├── applications/           # ArgoCD Applications for GitOps deployment
-│   ├── app-of-apps/       # Application of Applications pattern
-│   ├── agents/            # AI Agent service applications
-│   ├── frontend/          # Frontend application
-│   ├── infrastructure/    # Infrastructure components
-│   └── orchestration/     # Orchestration service
-├── oam/                   # Open Application Model (OAM) applications
-│   ├── agents/            # Agent OAM applications
-│   ├── frontend/          # Frontend OAM applications
-│   ├── infrastructure/    # Infrastructure OAM applications
-│   ├── orchestration/     # Orchestration OAM applications
-│   ├── components/        # Reusable OAM components
-│   ├── policies/          # OAM policies
-│   └── workflows/         # OAM workflows
-├── charts/                # Helm charts (if needed)
-├── environments/          # Environment-specific configurations
-│   ├── dev/              # Development environment
-│   ├── staging/          # Staging environment
-│   └── prod/             # Production environment
-└── scripts/              # GitOps utility scripts
 
-## GitOps Workflow
 
-1. **Source Code Changes**: Developers push to `health-service-idp` repository
-2. **CI/CD Pipeline**: GitHub Actions builds containers and updates this repository
-3. **ArgoCD Sync**: ArgoCD monitors this repository and deploys changes to vcluster
-4. **Semantic Versioning**: All deployments use semantic versioning with commit SHA
+## Deployment Flow
 
-## Environment Management
+1. Source repository CI/CD builds and pushes images
+2. Source CI/CD sends repository_dispatch to this repo
+3. GitOps workflow updates manifest files with new image tags
+4. ArgoCD detects changes and deploys to cluster
 
-- **Development**: Real-time deployments from main branch
-- **Staging**: Controlled deployments for testing
-- **Production**: Manual approval required for deployments
+## ArgoCD Applications
 
-## Repository Monitoring
+- **App of Apps**:  - Main application managing all microservices
+- **ApplicationSet**: Automatically creates ArgoCD apps for each service in 
 
-ArgoCD watches the following paths:
-- `applications/` - ArgoCD Applications
-- `oam/` - OAM Applications  
-- `environments/*/` - Environment-specific overrides
+## Adding New Services
 
-## Quick Start
-
-```bash
-# Apply ArgoCD App-of-Apps
-kubectl apply -f applications/app-of-apps/
-
-# Monitor deployments
-kubectl get applications -n argocd
-```
-
-## Security
-
-This repository contains deployment manifests only. No sensitive data or secrets should be committed here. Use Kubernetes secrets or external secret management systems.
-
----
-
-**Related Repository**: [health-service-idp](https://github.com/shlapolosa/health-service-idp) - Application source code
+When ApplicationClaim creates a new microservice, it automatically:
+1. Creates a directory in 
+2. Generates Knative service and OAM component manifests
+3. Updates the ApplicationSet to include the new service
