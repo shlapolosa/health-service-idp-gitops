@@ -1,0 +1,11 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata: { name: e2e-nats, namespace: default }
+spec:
+  components:
+  - name: e2e-nats
+    type: nats-jetstream
+    properties:
+      replicas: 3
+      storageSize: 5Gi
+      jetstreamEnabled: true
