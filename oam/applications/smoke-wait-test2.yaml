@@ -1,0 +1,11 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: smoke-wait-test2
+  namespace: default
+spec:
+  components:
+  - name: smoke-stub
+    type: phantom-component
+    properties:
+      foo: bar
