@@ -5,26 +5,38 @@ metadata:
   namespace: default
 spec:
   components:
+    # Fix 2026-05-29 — was image: nginx:stable / node:20-alpine / python:3.11-slim
+    # Pods CrashLoopBackOff because upstream runtime images have no app code.
+    # Org `default/webservice` CD supports language: which triggers the
+    # microservice-standard-contract Argo workflow to scaffold + build + push the
+    # real app image. Dropping image, setting language so the platform takes over.
     - name: realtime-wearables-data-stream-that-makes-125959-web-client
       type: webservice
       properties:
-        image: nginx:stable
+        language: nodejs
+        framework: nextjs
+        port: 8080
     - name: realtime-wearables-data-stream-that-makes-125959-mobile-client
       type: webservice
       properties:
-        image: nginx:stable
+        language: nodejs
+        framework: react-native
+        port: 8080
     - name: realtime-wearables-data-stream-that-makes-125959-bff
       type: webservice
       properties:
-        image: node:20-alpine
+        language: nodejs
+        framework: express
+        port: 8080
     - name: realtime-wearables-data-stream-that-makes-125959-api
       type: webservice
       properties:
-        image: python:3.11-slim
+        language: python
+        framework: fastapi
+        port: 8080
     - name: realtime-wearables-data-stream-that-makes-125959-stream-processor
       type: realtime-platform
-      properties:
-        image: python:3.11-slim
+      properties: {}
     - name: realtime-wearables-data-stream-that-makes-125959-data-store
       type: postgresql
       properties:
@@ -47,5 +59,4 @@ spec:
       properties: {}
     - name: realtime-wearables-data-stream-that-makes-125959-graphql
       type: graphql-gateway
-      properties:
-        image: nginx:stable
+      properties: {}
