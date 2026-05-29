@@ -1,0 +1,38 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: n8n-flow-001
+  namespace: default
+spec:
+  components:
+  - name: api
+    type: webservice
+    properties:
+      image: registry/n8n-api:1.0.0
+      port: 8080
+      language: python
+      framework: fastapi
+      readinessProbe:
+        enabled: true
+        initialDelaySeconds: 30
+        periodSeconds: 10
+      livenessProbe:
+        enabled: true
+        initialDelaySeconds: 30
+        periodSeconds: 10
+      resources:
+        requests:
+          cpu: 250m
+          memory: 256Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+  - name: db
+    type: postgresql
+    properties:
+      database: n8n_app
+      storage: 20Gi
+      storageClass: gp2
+      auth:
+        username: appuser
+        password: $(vault:db.password)
