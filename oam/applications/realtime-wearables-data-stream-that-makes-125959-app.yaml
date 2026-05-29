@@ -1,0 +1,51 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: realtime-wearables-data-stream-that-makes-125959-app
+  namespace: default
+spec:
+  components:
+    - name: realtime-wearables-data-stream-that-makes-125959-web-client
+      type: webservice
+      properties:
+        image: nginx:stable
+    - name: realtime-wearables-data-stream-that-makes-125959-mobile-client
+      type: webservice
+      properties:
+        image: nginx:stable
+    - name: realtime-wearables-data-stream-that-makes-125959-bff
+      type: webservice
+      properties:
+        image: node:20-alpine
+    - name: realtime-wearables-data-stream-that-makes-125959-api
+      type: webservice
+      properties:
+        image: python:3.11-slim
+    - name: realtime-wearables-data-stream-that-makes-125959-stream-processor
+      type: realtime-platform
+      properties:
+        image: python:3.11-slim
+    - name: realtime-wearables-data-stream-that-makes-125959-data-store
+      type: postgresql
+      properties:
+        database: wearables_data
+    - name: realtime-wearables-data-stream-that-makes-125959-streaming-processor
+      type: kafka
+      properties: {}
+    - name: realtime-wearables-data-stream-that-makes-125959-timeseries-db
+      type: clickhouse
+      properties: {}
+    - name: realtime-wearables-data-stream-that-makes-125959-user-profile-db
+      type: postgresql
+      properties:
+        database: user_profiles
+    - name: shared-mongodb
+      type: mongodb
+      properties: {}
+    - name: shared-redis
+      type: redis
+      properties: {}
+    - name: realtime-wearables-data-stream-that-makes-125959-graphql
+      type: graphql-gateway
+      properties:
+        image: nginx:stable
