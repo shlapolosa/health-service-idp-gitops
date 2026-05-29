@@ -5,49 +5,57 @@ metadata:
   namespace: default
 spec:
   components:
-    # Fix 2026-05-29 — was image: nginx:stable / node:20-alpine / python:3.11-slim
-    # Pods CrashLoopBackOff because upstream runtime images have no app code.
-    # Org `default/webservice` CD supports language: which triggers the
-    # microservice-standard-contract Argo workflow to scaffold + build + push the
-    # real app image. Dropping image, setting language so the platform takes over.
-    - name: realtime-wearables-data-stream-that-makes-125959-web-client
+    # Fix 2026-05-29 (second iteration).
+    # Two failure classes addressed:
+    # 1. Component names exceeded the 63-char DNS label limit after CDs added their
+    #    own suffixes (e.g. graphql-gateway adds "-infrastructure"; postgresql adds
+    #    "-postgresql"; realtime-platform adds "-realtime-service"). Renamed all
+    #    components to use the short prefix `wear-125959-` (12 chars) so suffixes fit.
+    # 2. webservice CD requires `image:` (CUE schema enforced). Restoring image
+    #    pointing at the scaffold target (docker.io/socrates12345/<name>:latest)
+    #    where microservice-standard-contract workflow will push real app code.
+    - name: wear-125959-web-client
       type: webservice
       properties:
+        image: docker.io/socrates12345/wear-125959-web-client:latest
         language: nodejs
         framework: nextjs
         port: 8080
-    - name: realtime-wearables-data-stream-that-makes-125959-mobile-client
+    - name: wear-125959-mobile-client
       type: webservice
       properties:
+        image: docker.io/socrates12345/wear-125959-mobile-client:latest
         language: nodejs
         framework: react-native
         port: 8080
-    - name: realtime-wearables-data-stream-that-makes-125959-bff
+    - name: wear-125959-bff
       type: webservice
       properties:
+        image: docker.io/socrates12345/wear-125959-bff:latest
         language: nodejs
         framework: express
         port: 8080
-    - name: realtime-wearables-data-stream-that-makes-125959-api
+    - name: wear-125959-api
       type: webservice
       properties:
+        image: docker.io/socrates12345/wear-125959-api:latest
         language: python
         framework: fastapi
         port: 8080
-    - name: realtime-wearables-data-stream-that-makes-125959-stream-processor
+    - name: wear-125959-stream-processor
       type: realtime-platform
       properties: {}
-    - name: realtime-wearables-data-stream-that-makes-125959-data-store
+    - name: wear-125959-data-store
       type: postgresql
       properties:
         database: wearables_data
-    - name: realtime-wearables-data-stream-that-makes-125959-streaming-processor
+    - name: wear-125959-stream-kafka
       type: kafka
       properties: {}
-    - name: realtime-wearables-data-stream-that-makes-125959-timeseries-db
+    - name: wear-125959-tsdb
       type: clickhouse
       properties: {}
-    - name: realtime-wearables-data-stream-that-makes-125959-user-profile-db
+    - name: wear-125959-user-db
       type: postgresql
       properties:
         database: user_profiles
@@ -57,6 +65,6 @@ spec:
     - name: shared-redis
       type: redis
       properties: {}
-    - name: realtime-wearables-data-stream-that-makes-125959-graphql
+    - name: wear-125959-graphql
       type: graphql-gateway
       properties: {}
