@@ -19,14 +19,14 @@ spec:
       properties:
         image: docker.io/socrates12345/wear-125959-web-client:latest
         language: nodejs
-        framework: nextjs
+        framework: auto
         port: 8080
     - name: wear-125959-mobile-client
       type: webservice
       properties:
         image: docker.io/socrates12345/wear-125959-mobile-client:latest
         language: nodejs
-        framework: react-native
+        framework: auto
         port: 8080
     - name: wear-125959-bff
       type: webservice
