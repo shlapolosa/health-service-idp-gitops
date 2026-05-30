@@ -1,0 +1,11 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: agent-test-164105
+  namespace: default
+spec:
+  components:
+  - name: agent-test-164105-api
+    type: webservice
+    properties:
+      language: python
