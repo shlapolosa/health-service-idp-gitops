@@ -1,0 +1,11 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: oam-final-155601
+  namespace: default
+spec:
+  components:
+  - name: oam-final-155601-svc
+    type: webservice
+    properties:
+      language: python
