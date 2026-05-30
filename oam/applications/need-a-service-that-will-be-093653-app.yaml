@@ -1,0 +1,14 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: need-a-service-that-will-be-093653-app
+  namespace: default
+spec:
+  components:
+    - name: need-a-service-that-will-be-093653-api
+      type: webservice
+      properties:
+        image: nginx:1.27
+    - name: need-a-service-that-will-be-093653-cache
+      type: redis
+      properties: {}
