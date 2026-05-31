@@ -53,3 +53,8 @@ spec:
             githubOrg: shlapolosa
             dockerRegistry: healthidpuaeacr.azurecr.io
 
+  # NOTE: image-source + language-enum constraints used to be authored as
+  # separate PolicyDefinitions. They're now enforced at the CUE type level
+  # inside webservice-shape (image regex) + auto-scaffold-bootstrap
+  # (language enum) — vela dry-run rejects non-conforming values before
+  # the workflow ever fires. No explicit policies block needed.
