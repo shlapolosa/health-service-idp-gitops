@@ -11,33 +11,30 @@ spec:
         name: need-an-webservice-that-will-add-052806-api
         language: nodejs
         framework: express
+        port: 8080
         healthPath: /health
         resources:
-          requests:
-            cpu: 100m
-            memory: 128Mi
-          limits:
-            cpu: 500m
-            memory: 512Mi
+          cpu: 250m
+          memory: 256Mi
         environment:
-          DATABASE_HOST: need-an-webservice-that-will-add-052806-db
-          DATABASE_NAME: calculations
-          CACHE_HOST: need-an-webservice-that-will-add-052806-cache
-          RETENTION_DAYS: "30"
-        database: need-an-webservice-that-will-add-052806-db
-        cache: need-an-webservice-that-will-add-052806-cache
+          DB_HOST: need-an-webservice-that-will-add-052806-db
+          DB_PORT: "5432"
+          DB_NAME: additions
+          DB_USER: appuser
+          DB_PASSWORD: changeme
+          CACHE_URL: redis://:redis-password@need-an-webservice-that-will-add-052806-cache-master:6379
     - name: need-an-webservice-that-will-add-052806-cache
       type: redis
       properties:
         architecture: standalone
-        authEnabled: false
+        authEnabled: true
+        password: redis-password
         persistenceEnabled: false
-        replicaCount: 1
         metricsEnabled: true
     - name: need-an-webservice-that-will-add-052806-db
       type: postgresql
       properties:
-        database: calculations
+        database: additions
         auth:
           username: appuser
           password: changeme
@@ -49,5 +46,8 @@ spec:
           limits:
             cpu: 500m
             memory: 512Mi
-        storage: 10Gi
         metrics: true
+        storage: 10Gi
+        username: appuser
+        password: changeme
+        postgresPassword: adminpass
