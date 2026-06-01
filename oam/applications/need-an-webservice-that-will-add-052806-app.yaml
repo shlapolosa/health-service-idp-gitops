@@ -1,0 +1,53 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: need-an-webservice-that-will-add-052806-app
+  namespace: default
+spec:
+  components:
+    - name: need-an-webservice-that-will-add-052806-api
+      type: webservice
+      properties:
+        name: need-an-webservice-that-will-add-052806-api
+        language: nodejs
+        framework: express
+        healthPath: /health
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        environment:
+          DATABASE_HOST: need-an-webservice-that-will-add-052806-db
+          DATABASE_NAME: calculations
+          CACHE_HOST: need-an-webservice-that-will-add-052806-cache
+          RETENTION_DAYS: "30"
+        database: need-an-webservice-that-will-add-052806-db
+        cache: need-an-webservice-that-will-add-052806-cache
+    - name: need-an-webservice-that-will-add-052806-cache
+      type: redis
+      properties:
+        architecture: standalone
+        authEnabled: false
+        persistenceEnabled: false
+        replicaCount: 1
+        metricsEnabled: true
+    - name: need-an-webservice-that-will-add-052806-db
+      type: postgresql
+      properties:
+        database: calculations
+        auth:
+          username: appuser
+          password: changeme
+          postgresPassword: adminpass
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        storage: 10Gi
+        metrics: true
