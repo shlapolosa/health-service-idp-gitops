@@ -1,0 +1,36 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: task-list-application-that-builds-a-125121-app
+  namespace: default
+spec:
+  components:
+    - name: task-list-application-that-builds-a-125121-task-service
+      type: webservice
+      properties:
+        name: task-list-application-that-builds-a-125121-task-service
+        port: 8080
+        healthPath: /health
+        language: java
+        resources:
+          cpu: 250m
+          memory: 512Mi
+        environment:
+          DB_HOST: shared-postgresql
+        database: shared-postgresql
+    - name: shared-postgresql
+      type: postgresql
+      properties:
+        database: taskdb
+        auth:
+          username: appuser
+          passwordSecretRef:
+            name: task-list-db-secret
+            key: password
+          postgresPasswordSecretRef:
+            name: task-list-db-secret
+            key: postgresPassword
+        storage: 10Gi
+        resources:
+          cpu: 250m
+          memory: 256Mi
