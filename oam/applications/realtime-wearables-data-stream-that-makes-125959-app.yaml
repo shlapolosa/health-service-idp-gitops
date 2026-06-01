@@ -1,0 +1,106 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: realtime-wearables-data-stream-that-makes-125959-app
+  namespace: default
+spec:
+  components:
+    - name: realtime-wearables-data-stream-that-makes-125959-platform
+      type: realtime-platform
+      properties:
+        port: 8080
+        healthPath: /health
+        resources:
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+        environment:
+          LOG_LEVEL: info
+          STREAM_BACKEND: kafka
+          ANALYTICS_INTERFACE: rest-and-streams
+          DEVICE_INGESTION_PROTOCOLS: mqtt,websocket
+        language: java
+        framework: spring-boot
+        database: mongodb
+        visualization: grafana
+        iot: true
+        dataRetention: 30d
+        repository: realtime-wearables-data-stream-that-makes-125959
+        targetEnvironment: prod
+    - name: realtime-wearables-data-stream-that-makes-125959-api
+      type: webservice
+      properties:
+        image: ""
+        port: 8080
+        healthPath: /health
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
+        environment:
+          API_MODE: rest
+          AUTH_MODE: oauth2-jwt
+          DATA_SOURCE: analytics
+        language: java
+        framework: spring-boot
+        realtime: kafka
+        repository: realtime-wearables-data-stream-that-makes-125959
+        targetEnvironment: prod
+        openApiPath: /openapi
+        apiVersion: v1
+        database: mongodb
+        cache: redis
+    - name: realtime-wearables-data-stream-that-makes-125959-streaming
+      type: kafka
+      properties:
+        replicas: 3
+        storageSize: 100Gi
+    - name: realtime-wearables-data-stream-that-makes-125959-documentdb
+      type: mongodb
+      properties:
+        authEnabled: true
+        database: wearables
+        username: wearables
+        password: wearables-password
+        architecture: replicaset
+        replicaCount: 3
+        persistenceEnabled: true
+        storageSize: 20Gi
+        metricsEnabled: true
+    - name: realtime-wearables-data-stream-that-makes-125959-cache
+      type: redis
+      properties:
+        authEnabled: true
+        password: redis-password
+        architecture: replication
+        persistenceEnabled: true
+        storageSize: 8Gi
+        replicaCount: 2
+        metricsEnabled: true
+    - name: realtime-wearables-data-stream-that-makes-125959-analyticsdb
+      type: clickhouse
+      properties:
+        version: "24.3"
+        replicas: 1
+        database: analytics
+        storageSize: 100Gi
+        resources:
+          limits:
+            cpu: "2"
+            memory: "4Gi"
+          requests:
+            cpu: "1"
+            memory: "2Gi"
+        cpu: "2"
+        memory: "4Gi"
+    - name: realtime-wearables-data-stream-that-makes-125959-auth
+      type: auth0-idp
+      properties:
+        name: realtime-wearables-data-stream-that-makes-125959-auth
+        targetEnvironment: prod
