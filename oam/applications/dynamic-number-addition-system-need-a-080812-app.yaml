@@ -9,10 +9,7 @@ spec:
       type: webservice
       properties:
         name: dynamic-number-addition-system-need-a-080812-backend
-        language: nodejs
-        framework: express
-        port: 8080
-        healthPath: /health
+        language: python
         resources:
           requests:
             cpu: 250m
@@ -21,14 +18,12 @@ spec:
             cpu: 500m
             memory: 512Mi
         environment:
-          CACHE_STRATEGY: lru-last-5
-          RETENTION_COUNT: "5"
-          INPUT_VALIDATION: "true"
-        database: dynamic-number-addition-system-need-a-080812-postgres
-        cache: dynamic-number-addition-system-need-a-080812-cache
-        secretRef:
-          name: dynamic-number-addition-system-need-a-080812-backend-secrets
-    - name: dynamic-number-addition-system-need-a-080812-postgres
+          LOG_LEVEL: info
+        port: 8080
+        healthPath: /health
+        database: dynamic-number-addition-system-need-a-080812-postgresql
+        cache: dynamic-number-addition-system-need-a-080812-redis
+    - name: dynamic-number-addition-system-need-a-080812-postgresql
       type: postgresql
       properties:
         database: additiondb
@@ -36,7 +31,6 @@ spec:
           username: appuser
           password: changeme
           postgresPassword: adminpass
-        storage: 10Gi
         resources:
           requests:
             cpu: 250m
@@ -44,43 +38,12 @@ spec:
           limits:
             cpu: 500m
             memory: 512Mi
-        metrics: false
-        username: appuser
-        password: changeme
-        postgresPassword: adminpass
-        cpu: 250m
-        memory: 256Mi
-        cpuLimit: 500m
-        memoryLimit: 512Mi
-    - name: dynamic-number-addition-system-need-a-080812-cache
+        storage: 10Gi
+    - name: dynamic-number-addition-system-need-a-080812-redis
       type: redis
       properties:
-        authEnabled: true
-        password: redis-password
         architecture: standalone
-        persistenceEnabled: true
-        storageSize: 8Gi
+        authEnabled: true
+        persistenceEnabled: false
         replicaCount: 1
         metricsEnabled: true
-    - name: dynamic-number-addition-system-need-a-080812-mongodb
-      type: mongodb
-      properties:
-        authEnabled: true
-        rootPassword: mongodb-root
-        database: addition_aux
-        username: user
-        password: password
-        architecture: replicaset
-        replicaCount: 3
-        persistenceEnabled: true
-        storageSize: 20Gi
-        metricsEnabled: true
-    - name: dynamic-number-addition-system-need-a-080812-eventing
-      type: kafka
-      properties:
-        replicas: 3
-        storageSize: 100Gi
-    - name: dynamic-number-addition-system-need-a-080812-external-idp
-      type: auth0-idp
-      properties:
-        name: dynamic-number-addition-system-need-a-080812-external-idp
