@@ -1,0 +1,80 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: dynamic-number-addition-system-need-a-080812-app
+  namespace: default
+spec:
+  components:
+    - name: dynamic-number-addition-system-need-a-080812-backend
+      type: webservice
+      properties:
+        name: dynamic-number-addition-system-need-a-080812-backend
+        language: nodejs
+        framework: express
+        port: 8080
+        healthPath: /health
+        resources:
+          cpu: 250m
+          memory: 256Mi
+          cpuLimit: 500m
+          memoryLimit: 512Mi
+        environment:
+          REDIS_CACHE_SIZE: "5"
+          RESULTS_RETENTION_COUNT: "5"
+          DB_RETENTION_POLICY: "last-5-results"
+          INPUT_VALIDATION_ENABLED: "true"
+          DB_RETRY_ENABLED: "true"
+          CIRCUIT_BREAKER_ENABLED: "true"
+        database: shared-postgresql
+        cache: shared-redis
+    - name: shared-redis
+      type: redis
+      properties:
+        architecture: standalone
+        authEnabled: true
+        password: redis-password
+        persistenceEnabled: true
+        storageSize: 8Gi
+        replicaCount: 1
+        metricsEnabled: true
+    - name: shared-postgresql
+      type: postgresql
+      properties:
+        database: additiondb
+        auth:
+          username: appuser
+          password: changeme
+          postgresPassword: adminpass
+        username: appuser
+        password: changeme
+        postgresPassword: adminpass
+        storage: 10Gi
+        storageClass: gp2
+        metrics: false
+        resources:
+          cpu: 250m
+          memory: 256Mi
+          cpuLimit: 500m
+          memoryLimit: 512Mi
+    - name: shared-mongodb
+      type: mongodb
+      properties:
+        authEnabled: true
+        rootPassword: mongodb-root
+        database: additiondb
+        username: user
+        password: password
+        architecture: replicaset
+        replicaCount: 3
+        persistenceEnabled: true
+        storageSize: 20Gi
+        metricsEnabled: true
+    - name: shared-kafka
+      type: kafka
+      properties:
+        replicas: 3
+        storageSize: 100Gi
+    - name: dynamic-number-addition-system-need-a-080812-idp
+      type: auth0-idp
+      properties:
+        name: dynamic-number-addition-system-need-a-080812-idp
