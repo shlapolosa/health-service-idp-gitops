@@ -17,20 +17,9 @@ spec:
           cpu: 250m
           memory: 256Mi
         environment:
-          DB_HOST: need-an-webservice-that-will-add-052806-db
-          DB_PORT: "5432"
-          DB_NAME: additions
-          DB_USER: appuser
-          DB_PASSWORD: changeme
-          CACHE_URL: redis://:redis-password@need-an-webservice-that-will-add-052806-cache-master:6379
-    - name: need-an-webservice-that-will-add-052806-cache
-      type: redis
-      properties:
-        architecture: standalone
-        authEnabled: true
-        password: redis-password
-        persistenceEnabled: false
-        metricsEnabled: true
+          NODE_ENV: production
+        database: need-an-webservice-that-will-add-052806-db
+        cache: need-an-webservice-that-will-add-052806-cache
     - name: need-an-webservice-that-will-add-052806-db
       type: postgresql
       properties:
@@ -46,8 +35,12 @@ spec:
           limits:
             cpu: 500m
             memory: 512Mi
-        metrics: true
         storage: 10Gi
-        username: appuser
-        password: changeme
-        postgresPassword: adminpass
+        metrics: true
+    - name: need-an-webservice-that-will-add-052806-cache
+      type: redis
+      properties:
+        architecture: standalone
+        persistenceEnabled: true
+        storageSize: 8Gi
+        metricsEnabled: true
