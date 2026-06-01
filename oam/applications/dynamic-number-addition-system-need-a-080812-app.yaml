@@ -14,30 +14,21 @@ spec:
         port: 8080
         healthPath: /health
         resources:
-          cpu: 250m
-          memory: 256Mi
-          cpuLimit: 500m
-          memoryLimit: 512Mi
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
         environment:
-          REDIS_CACHE_SIZE: "5"
-          RESULTS_RETENTION_COUNT: "5"
-          DB_RETENTION_POLICY: "last-5-results"
-          INPUT_VALIDATION_ENABLED: "true"
-          DB_RETRY_ENABLED: "true"
-          CIRCUIT_BREAKER_ENABLED: "true"
-        database: shared-postgresql
-        cache: shared-redis
-    - name: shared-redis
-      type: redis
-      properties:
-        architecture: standalone
-        authEnabled: true
-        password: redis-password
-        persistenceEnabled: true
-        storageSize: 8Gi
-        replicaCount: 1
-        metricsEnabled: true
-    - name: shared-postgresql
+          CACHE_STRATEGY: lru-last-5
+          RETENTION_COUNT: "5"
+          INPUT_VALIDATION: "true"
+        database: dynamic-number-addition-system-need-a-080812-postgres
+        cache: dynamic-number-addition-system-need-a-080812-cache
+        secretRef:
+          name: dynamic-number-addition-system-need-a-080812-backend-secrets
+    - name: dynamic-number-addition-system-need-a-080812-postgres
       type: postgresql
       properties:
         database: additiondb
@@ -45,23 +36,38 @@ spec:
           username: appuser
           password: changeme
           postgresPassword: adminpass
+        storage: 10Gi
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        metrics: false
         username: appuser
         password: changeme
         postgresPassword: adminpass
-        storage: 10Gi
-        storageClass: gp2
-        metrics: false
-        resources:
-          cpu: 250m
-          memory: 256Mi
-          cpuLimit: 500m
-          memoryLimit: 512Mi
-    - name: shared-mongodb
+        cpu: 250m
+        memory: 256Mi
+        cpuLimit: 500m
+        memoryLimit: 512Mi
+    - name: dynamic-number-addition-system-need-a-080812-cache
+      type: redis
+      properties:
+        authEnabled: true
+        password: redis-password
+        architecture: standalone
+        persistenceEnabled: true
+        storageSize: 8Gi
+        replicaCount: 1
+        metricsEnabled: true
+    - name: dynamic-number-addition-system-need-a-080812-mongodb
       type: mongodb
       properties:
         authEnabled: true
         rootPassword: mongodb-root
-        database: additiondb
+        database: addition_aux
         username: user
         password: password
         architecture: replicaset
@@ -69,12 +75,12 @@ spec:
         persistenceEnabled: true
         storageSize: 20Gi
         metricsEnabled: true
-    - name: shared-kafka
+    - name: dynamic-number-addition-system-need-a-080812-eventing
       type: kafka
       properties:
         replicas: 3
         storageSize: 100Gi
-    - name: dynamic-number-addition-system-need-a-080812-idp
+    - name: dynamic-number-addition-system-need-a-080812-external-idp
       type: auth0-idp
       properties:
-        name: dynamic-number-addition-system-need-a-080812-idp
+        name: dynamic-number-addition-system-need-a-080812-external-idp
