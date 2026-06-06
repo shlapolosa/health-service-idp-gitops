@@ -1,0 +1,32 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: items-api
+  namespace: default
+spec:
+  components:
+  - name: items-db
+    type: postgresql
+    properties:
+      database: items
+      storageClass: default
+  - name: items-cache
+    type: redis
+    properties:
+      architecture: standalone
+      persistenceEnabled: false
+  - name: items-auth0
+    type: auth0-idp
+    properties: {}
+  - name: items-api
+    type: webservice
+    properties:
+      name: items-api
+      language: python
+      database: items-db
+      cache: items-cache
+      identity: items-auth0
+    traits:
+    - type: expose-api
+      properties:
+        identity: items-auth0
