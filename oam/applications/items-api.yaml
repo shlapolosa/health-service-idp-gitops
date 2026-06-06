@@ -26,6 +26,8 @@ spec:
       database: items-db
       cache: items-cache
       identity: items-auth0
+      environment:
+        E2E_RENDER: "v2"
     traits:
     - type: expose-api
       properties:
