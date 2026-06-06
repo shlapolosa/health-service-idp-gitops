@@ -30,3 +30,15 @@ spec:
     - type: expose-api
       properties:
         identity: patient2-auth0
+  - name: patient2-identity
+    type: webservice
+    properties:
+      name: patient2-identity
+      language: java
+      database: patient2-db
+      cache: patient2-cache
+      identity: patient2-auth0
+    traits:
+    - type: expose-api
+      properties:
+        identity: patient2-auth0
