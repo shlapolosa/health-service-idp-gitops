@@ -39,6 +39,9 @@ spec:
       cache: patient2-cache
       identity: patient2-auth0
     traits:
+    - type: auto-scaffold-bootstrap
+      properties:
+        language: java
     - type: expose-api
       properties:
         identity: patient2-auth0
