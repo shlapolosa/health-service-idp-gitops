@@ -10,3 +10,5 @@ spec:
     properties:
       name: spine-e2e-svc
       language: python
+      environment:
+        E2E_UPDATE_MARKER: "phase2"
