@@ -1,0 +1,12 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: spine-e2e-svc
+  namespace: default
+spec:
+  components:
+  - name: spine-e2e-svc
+    type: webservice
+    properties:
+      name: spine-e2e-svc
+      language: python
