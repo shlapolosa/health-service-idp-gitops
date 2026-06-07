@@ -1,0 +1,62 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: patient4-api
+  namespace: default
+spec:
+  components:
+  - name: patient4-db
+    type: postgresql
+    properties:
+      database: patients
+      storageClass: default
+  - name: patient4-cache
+    type: redis
+    properties:
+      architecture: standalone
+      persistenceEnabled: false
+  - name: patient4-auth0
+    type: auth0-idp
+    properties: {}
+  - name: patient4-api
+    type: webservice
+    properties:
+      name: patient4-api
+      language: python
+      database: patient4-db
+      cache: patient4-cache
+      identity: patient4-auth0
+    traits:
+    - type: expose-api
+      properties:
+        identity: patient4-auth0
+  - name: patient4-records
+    type: webservice
+    properties:
+      name: patient4-records
+      language: python
+      database: patient4-db
+      cache: patient4-cache
+      identity: patient4-auth0
+    traits:
+    - type: auto-scaffold-bootstrap
+      properties:
+        language: python
+    - type: expose-api
+      properties:
+        identity: patient4-auth0
+  - name: patient4-identity
+    type: webservice
+    properties:
+      name: patient4-identity
+      language: java
+      database: patient4-db
+      cache: patient4-cache
+      identity: patient4-auth0
+    traits:
+    - type: auto-scaffold-bootstrap
+      properties:
+        language: java
+    - type: expose-api
+      properties:
+        identity: patient4-auth0
