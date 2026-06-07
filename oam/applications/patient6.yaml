@@ -1,0 +1,22 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: patient6
+  namespace: default
+spec:
+  components:
+  - name: patient6-db
+    type: postgresql
+    properties: {database: patients, storageClass: default}
+  - name: patient6-cache
+    type: redis
+    properties: {architecture: standalone, persistenceEnabled: false}
+  - name: patient6-auth0
+    type: auth0-idp
+    properties: {}
+  - name: patient6-api
+    type: webservice
+    properties: {name: patient6-api, language: python, database: patient6-db, cache: patient6-cache, identity: patient6-auth0}
+    traits:
+    - type: expose-api
+      properties: {identity: patient6-auth0}
