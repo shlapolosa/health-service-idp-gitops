@@ -38,6 +38,8 @@ spec:
       database: patient2-db
       cache: patient2-cache
       identity: patient2-auth0
+      environment:
+        REBUILD: commons-pool2-7dea385
     traits:
     - type: auto-scaffold-bootstrap
       properties:
