@@ -39,7 +39,7 @@ spec:
       cache: patient2-cache
       identity: patient2-auth0
       environment:
-        REBUILD: health-contract-4a8088a
+        REBUILD: nullsafe-d8e9d65
     traits:
     - type: auto-scaffold-bootstrap
       properties:
