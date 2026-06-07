@@ -39,7 +39,7 @@ spec:
       cache: patient2-cache
       identity: patient2-auth0
       environment:
-        REBUILD: nullsafe-d8e9d65
+        REBUILD: probe-grace-9f45197
     traits:
     - type: auto-scaffold-bootstrap
       properties:
