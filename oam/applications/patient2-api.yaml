@@ -39,7 +39,7 @@ spec:
       cache: patient2-cache
       identity: patient2-auth0
       environment:
-        REBUILD: commons-pool2-7dea385
+        REBUILD: schema-ssl-763a2c4
     traits:
     - type: auto-scaffold-bootstrap
       properties:
