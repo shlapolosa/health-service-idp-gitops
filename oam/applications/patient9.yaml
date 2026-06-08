@@ -1,0 +1,60 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: patient9
+  namespace: default
+spec:
+  components:
+  - name: patient9-db
+    type: postgresql
+    properties:
+      database: patients
+      storageClass: default
+  - name: patient9-cache
+    type: redis
+    properties:
+      architecture: standalone
+      persistenceEnabled: false
+  - name: patient9-auth0
+    type: auth0-idp
+    properties: {}
+  - name: patient9-api
+    type: webservice
+    properties:
+      name: patient9-api
+      language: python
+      database: patient9-db
+      cache: patient9-cache
+      identity: patient9-auth0
+    traits:
+    - type: expose-api
+      properties:
+        identity: patient9-auth0
+  - name: patient9-records
+    type: webservice
+    properties:
+      name: patient9-records
+      language: python
+      database: patient9-db
+      cache: patient9-cache
+      identity: patient9-auth0
+    traits:
+    - type: expose-api
+      properties:
+        identity: patient9-auth0
+  - name: patient9-graph
+    type: graphql-gateway
+    properties:
+      name: patient9-graph
+      identity: patient9-auth0
+      sources:
+      - name: patient9-api
+        url: http://patient9-api.default.svc.cluster.local
+        specPath: /openapi.json
+      - name: patient9-records
+        url: http://patient9-records.default.svc.cluster.local
+        specPath: /openapi.json
+    traits:
+    - type: expose-api
+      properties:
+        identity: patient9-auth0
