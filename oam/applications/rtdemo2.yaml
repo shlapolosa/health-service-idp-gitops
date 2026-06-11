@@ -1,0 +1,72 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: rtdemo2
+  namespace: default
+spec:
+  components:
+  - name: rtdemo2-stream
+    type: realtime-platform
+    properties:
+      name: rtdemo2-stream
+      database: postgres
+      iot: false
+      topics:
+      - name: sensor_raw
+        partitions: 1
+        retention: 86400000
+      - name: sensor_agg
+        partitions: 1
+        retention: 86400000
+  - name: rtdemo2-ingest
+    type: realtime-service
+    properties:
+      name: rtdemo2-ingest
+      language: python
+      realtime: rtdemo2-stream
+      role: ingest
+      websocket: false
+      produces:
+      - sensor_raw
+      identity: rtdemo2-auth
+    traits:
+    - type: expose-api
+      properties:
+        identity: rtdemo2-auth
+  - name: rtdemo2-processor
+    type: realtime-service
+    properties:
+      name: rtdemo2-processor
+      language: python
+      realtime: rtdemo2-stream
+      role: processor
+      websocket: false
+      consumes:
+      - sensor_raw
+      produces:
+      - sensor_agg
+    traits:
+    - type: expose-api
+      properties:
+        identity: rtdemo2-auth
+        apiType: websocket
+  - name: rtdemo2-gateway
+    type: realtime-service
+    properties:
+      name: rtdemo2-gateway
+      language: python
+      realtime: rtdemo2-stream
+      role: gateway
+      websocket: true
+      consumes:
+      - sensor_agg
+      identity: rtdemo2-auth
+    traits:
+    - type: expose-api
+      properties:
+        identity: rtdemo2-auth
+        apiType: websocket
+  - name: rtdemo2-auth
+    type: auth0-idp
+    properties:
+      name: rtdemo2-auth
