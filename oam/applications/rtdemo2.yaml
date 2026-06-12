@@ -1,10 +1,20 @@
+# RT-2 W5 (#176): full-chain realtime e2e — one message in at the HTTP edge,
+# transformed value out at the ws edge, every hop through the declared topics.
+#
+#   POST /ingest (APIM) -> rtdemo2-ingest  --produce--> sensor_raw
+#                          rtdemo2-processor --consume sensor_raw / produce--> sensor_agg
+#                          rtdemo2-gateway  --consume sensor_agg --> /ws (APIM)
+#
+# Each realtime-service declares its ROLE (RT-2): the scaffold emits the matching
+# main.py on the realtime-transport wheel, with src/handlers.py as the logic slot
+# (passthrough until the dev-agent implements REQUIREMENTS.md).
 apiVersion: core.oam.dev/v1beta1
 kind: Application
 metadata:
   name: rtdemo2
   namespace: default
   annotations:
-    app.oam.dev/publishVersion: rt2-w5-v4
+    app.oam.dev/publishVersion: rt2-w5-v5
 spec:
   components:
   - name: rtdemo2-stream
@@ -26,7 +36,7 @@ spec:
       name: rtdemo2-ingest
       language: python
       environment:
-        RENDER_NUDGE: rt2-w5-v4
+        RENDER_NUDGE: rt2-w5-v5
       realtime: rtdemo2-stream
       role: ingest
       websocket: false
@@ -43,7 +53,7 @@ spec:
       name: rtdemo2-processor
       language: python
       environment:
-        RENDER_NUDGE: rt2-w5-v4
+        RENDER_NUDGE: rt2-w5-v5
       realtime: rtdemo2-stream
       role: processor
       websocket: false
@@ -51,18 +61,13 @@ spec:
       - sensor_raw
       produces:
       - sensor_agg
-    traits:
-    - type: expose-api
-      properties:
-        identity: rtdemo2-auth
-        apiType: websocket
   - name: rtdemo2-gateway
     type: realtime-service
     properties:
       name: rtdemo2-gateway
       language: python
       environment:
-        RENDER_NUDGE: rt2-w5-v4
+        RENDER_NUDGE: rt2-w5-v5
       realtime: rtdemo2-stream
       role: gateway
       websocket: true
