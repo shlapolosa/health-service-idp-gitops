@@ -4,37 +4,44 @@ metadata:
   name: gatedemo
 spec:
   components:
+  - name: gatedemo-identity
+    type: auth0-idp
+    properties:
+      kvSecretPrefix: auth0
+      seedAdminUser: true
+      seedEmail: admin@gatedemo.local
+      seedConnection: Username-Password-Authentication
   - name: gatedemo-platform
     type: realtime-platform
     properties:
       image: ghcr.io/example/gatedemo-platform:latest
       port: 8080
       healthPath: /health
+      iot: true
+      database: mongodb
+      visualization: grafana
+      dataRetention: 7d
       resources:
-        requests:
-          cpu: 250m
-          memory: 512Mi
         limits:
           cpu: 1000m
           memory: 1Gi
+        requests:
+          cpu: 250m
+          memory: 256Mi
       environment:
         LOG_LEVEL: info
         PIPELINE_NAME: gatedemo
-      iot: true
-      dataRetention: 168h
       topics:
-      - name: sensor-readings
+      - name: gatedemo.validated.readings
         partitions: 3
         retention: 604800000
-      - name: sensor-aggregates
+      - name: gatedemo.sensor.aggregates
         partitions: 3
         retention: 604800000
       processors:
       - name: rolling-average
-        sql: "SELECT\n  sensor_id,\n  AVG(reading_value) AS rolling_average\nFROM\
-          \ sensor_readings_stream\nGROUP BY sensor_id;\n"
-        username: demo
-        password: demo
+        sql: "SELECT\n  sensor_id,\n  AVG(reading) AS rolling_avg\nFROM readings\n\
+          GROUP BY sensor_id\n"
   - name: gatedemo-ingest
     type: realtime-service
     properties:
@@ -43,25 +50,32 @@ spec:
       healthPath: /health
       websocket: false
       role: ingest
-      realtime: kafka
       bootstrap: true
+      realtime: kafka
+      identity: gatedemo-identity
       produces:
-      - sensor-readings
+      - gatedemo.validated.readings
       resources:
-        requests:
-          cpu: 100m
-          memory: 256Mi
         limits:
           cpu: 500m
           memory: 512Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
       environment:
         PIPELINE_NAME: gatedemo
-        HTTP_INGEST_ENABLED: 'true'
         VALIDATION_MODE: strict
-        OUTPUT_TOPIC: sensor-readings
+        INGEST_PROTOCOL: http
     traits:
+    - type: pure-ingress
+      properties:
+        domain: gatedemo.example.com
+        http:
+          /ingest: 8080
+        identity: gatedemo-identity
     - type: expose-api
       properties:
+        identity: gatedemo-identity
         apiType: websocket
   - name: gatedemo-processor
     type: realtime-service
@@ -71,24 +85,23 @@ spec:
       healthPath: /health
       websocket: false
       role: processor
-      realtime: kafka
       bootstrap: true
+      realtime: kafka
       consumes:
-      - sensor-readings
+      - gatedemo.validated.readings
       produces:
-      - sensor-aggregates
+      - gatedemo.sensor.aggregates
       resources:
-        requests:
-          cpu: 100m
-          memory: 256Mi
         limits:
           cpu: 500m
           memory: 512Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
       environment:
         PIPELINE_NAME: gatedemo
-        PROCESSOR_MODE: rolling-average
-        INPUT_TOPIC: sensor-readings
-        OUTPUT_TOPIC: sensor-aggregates
+        AGGREGATION_WINDOW: rolling
+        AGGREGATION_METRIC: average
   - name: gatedemo-gateway
     type: realtime-service
     properties:
@@ -97,27 +110,29 @@ spec:
       healthPath: /health
       websocket: true
       role: gateway
-      realtime: kafka
       bootstrap: true
+      realtime: kafka
+      identity: gatedemo-identity
       consumes:
-      - sensor-aggregates
+      - gatedemo.sensor.aggregates
       resources:
-        requests:
-          cpu: 100m
-          memory: 256Mi
         limits:
           cpu: 500m
           memory: 512Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
       environment:
         PIPELINE_NAME: gatedemo
-        WS_PATH: /ws
-        INPUT_TOPIC: sensor-aggregates
+        STREAM_PATH: /ws
     traits:
     - type: pure-ingress
       properties:
         domain: gatedemo.example.com
         http:
           /ws: 8080
+        identity: gatedemo-identity
     - type: expose-api
       properties:
+        identity: gatedemo-identity
         apiType: websocket
