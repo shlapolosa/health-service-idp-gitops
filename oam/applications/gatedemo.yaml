@@ -1,0 +1,123 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: gatedemo
+spec:
+  components:
+  - name: gatedemo-platform
+    type: realtime-platform
+    properties:
+      image: ghcr.io/example/gatedemo-platform:latest
+      port: 8080
+      healthPath: /health
+      resources:
+        requests:
+          cpu: 250m
+          memory: 512Mi
+        limits:
+          cpu: 1000m
+          memory: 1Gi
+      environment:
+        LOG_LEVEL: info
+        PIPELINE_NAME: gatedemo
+      iot: true
+      dataRetention: 168h
+      topics:
+      - name: sensor-readings
+        partitions: 3
+        retention: 604800000
+      - name: sensor-aggregates
+        partitions: 3
+        retention: 604800000
+      processors:
+      - name: rolling-average
+        sql: "SELECT\n  sensor_id,\n  AVG(reading_value) AS rolling_average\nFROM\
+          \ sensor_readings_stream\nGROUP BY sensor_id;\n"
+        username: demo
+        password: demo
+  - name: gatedemo-ingest
+    type: realtime-service
+    properties:
+      image: ghcr.io/example/gatedemo-ingest:latest
+      port: 8080
+      healthPath: /health
+      websocket: false
+      role: ingest
+      realtime: kafka
+      bootstrap: true
+      produces:
+      - sensor-readings
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+      environment:
+        PIPELINE_NAME: gatedemo
+        HTTP_INGEST_ENABLED: 'true'
+        VALIDATION_MODE: strict
+        OUTPUT_TOPIC: sensor-readings
+    traits:
+    - type: expose-api
+      properties:
+        apiType: websocket
+  - name: gatedemo-processor
+    type: realtime-service
+    properties:
+      image: ghcr.io/example/gatedemo-processor:latest
+      port: 8080
+      healthPath: /health
+      websocket: false
+      role: processor
+      realtime: kafka
+      bootstrap: true
+      consumes:
+      - sensor-readings
+      produces:
+      - sensor-aggregates
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+      environment:
+        PIPELINE_NAME: gatedemo
+        PROCESSOR_MODE: rolling-average
+        INPUT_TOPIC: sensor-readings
+        OUTPUT_TOPIC: sensor-aggregates
+  - name: gatedemo-gateway
+    type: realtime-service
+    properties:
+      image: ghcr.io/example/gatedemo-gateway:latest
+      port: 8080
+      healthPath: /health
+      websocket: true
+      role: gateway
+      realtime: kafka
+      bootstrap: true
+      consumes:
+      - sensor-aggregates
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+      environment:
+        PIPELINE_NAME: gatedemo
+        WS_PATH: /ws
+        INPUT_TOPIC: sensor-aggregates
+    traits:
+    - type: pure-ingress
+      properties:
+        domain: gatedemo.example.com
+        http:
+          /ws: 8080
+    - type: expose-api
+      properties:
+        apiType: websocket
