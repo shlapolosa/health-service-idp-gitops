@@ -9,34 +9,28 @@ spec:
       properties:
         kvSecretPrefix: auth0
         seedAdminUser: true
-        seedEmail: admin@gatedemo.local
-        seedConnection: Username-Password-Authentication
+        seedEmail: admin@cafe.io
 
     - name: gatedemo-platform
       type: realtime-platform
       properties:
-        image: ghcr.io/example/gatedemo-platform:latest
-        port: 8080
-        healthPath: /health
         iot: true
-        database: mongodb
-        visualization: grafana
         dataRetention: 7d
         resources:
-          limits:
-            cpu: "1000m"
-            memory: "1Gi"
           requests:
-            cpu: "250m"
-            memory: "256Mi"
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
         environment:
           LOG_LEVEL: info
           PIPELINE_NAME: gatedemo
         topics:
-          - name: gatedemo.validated.readings
+          - name: gatedemo.validated-readings
             partitions: 3
             retention: 604800000
-          - name: gatedemo.sensor.aggregates
+          - name: gatedemo.sensor-aggregates
             partitions: 3
             retention: 604800000
         processors:
@@ -44,95 +38,96 @@ spec:
             sql: |
               SELECT
                 sensor_id,
-                AVG(reading) AS rolling_avg
-              FROM readings
+                AVG(reading) AS rolling_average
+              FROM readings_window
               GROUP BY sensor_id
 
     - name: gatedemo-ingest
       type: realtime-service
       properties:
-        image: ghcr.io/example/gatedemo-ingest:latest
         port: 8080
         healthPath: /health
         websocket: false
         role: ingest
         bootstrap: true
-        realtime: kafka
-        identity: gatedemo-identity
+        realtime: gatedemo-platform
+        consumes: []
         produces:
-          - gatedemo.validated.readings
+          - gatedemo.validated-readings
+        identity: gatedemo-identity
         resources:
-          limits:
-            cpu: "500m"
-            memory: "512Mi"
           requests:
-            cpu: "100m"
-            memory: "128Mi"
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
         environment:
+          SERVICE_NAME: gatedemo-ingest
           PIPELINE_NAME: gatedemo
-          VALIDATION_MODE: strict
           INGEST_PROTOCOL: http
+          VALIDATION_MODE: strict
       traits:
         - type: pure-ingress
           properties:
-            domain: gatedemo.example.com
-            http:
-              "/ingest": 8080
+            domain: gatedemo-ingest.example.com
+            path: /
             identity: gatedemo-identity
 
     - name: gatedemo-processor
       type: realtime-service
       properties:
-        image: ghcr.io/example/gatedemo-processor:latest
         port: 8080
         healthPath: /health
         websocket: false
         role: processor
         bootstrap: true
-        realtime: kafka
+        realtime: gatedemo-platform
         consumes:
-          - gatedemo.validated.readings
+          - gatedemo.validated-readings
         produces:
-          - gatedemo.sensor.aggregates
+          - gatedemo.sensor-aggregates
         resources:
-          limits:
-            cpu: "500m"
-            memory: "512Mi"
           requests:
-            cpu: "100m"
-            memory: "128Mi"
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
         environment:
+          SERVICE_NAME: gatedemo-processor
           PIPELINE_NAME: gatedemo
-          AGGREGATION_WINDOW: rolling
-          AGGREGATION_METRIC: average
+          AGGREGATION_MODE: rolling-average
+          WINDOW_KIND: per-sensor
 
     - name: gatedemo-gateway
       type: realtime-service
       properties:
-        image: ghcr.io/example/gatedemo-gateway:latest
         port: 8080
         healthPath: /health
         websocket: true
         role: gateway
         bootstrap: true
-        realtime: kafka
-        identity: gatedemo-identity
+        realtime: gatedemo-platform
         consumes:
-          - gatedemo.sensor.aggregates
+          - gatedemo.sensor-aggregates
+        produces: []
+        identity: gatedemo-identity
         resources:
-          limits:
-            cpu: "500m"
-            memory: "512Mi"
           requests:
-            cpu: "100m"
-            memory: "128Mi"
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
         environment:
+          SERVICE_NAME: gatedemo-gateway
           PIPELINE_NAME: gatedemo
-          STREAM_PATH: /ws
+          STREAM_PROTOCOL: websocket
+          WS_PATH: /ws
       traits:
         - type: pure-ingress
           properties:
-            domain: gatedemo.example.com
-            http:
-              "/ws": 8080
+            domain: gatedemo-gateway.example.com
+            path: /ws
             identity: gatedemo-identity
