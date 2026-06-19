@@ -1,99 +1,95 @@
-# gatedemo Requirements
+# gatedemo
 
-## Overview
-`gatedemo` is a realtime IoT telemetry pipeline. It must ingest sensor readings over HTTP, validate them, publish valid readings to Kafka, compute a rolling average per sensor, and stream aggregates to browsers over websocket. The design must reuse the platform's existing realtime ComponentDefinitions and include the platform-mandated identity topology for all externally exposed services.
+## Summary
+`gatedemo` is a realtime IoT telemetry pipeline. It accepts sensor readings over HTTP, validates them, publishes valid readings to Kafka, computes a rolling average per sensor, and streams aggregate updates to browser clients over websocket.
 
-## Architecture Scope
-The proposed architecture consists of:
-- `gatedemo-identity` using `auth0-idp` as the single identity component.
-- `gatedemo-platform` using `realtime-platform` for shared realtime infrastructure and topic declarations.
-- `gatedemo-ingest` using `realtime-service` as the externally exposed HTTP ingest endpoint.
-- `gatedemo-processor` using `realtime-service` as the internal stream processor.
-- `gatedemo-gateway` using `realtime-service` as the externally exposed websocket gateway.
+## Architecture
+The design reuses the platform's existing realtime ComponentDefinitions:
+- `realtime-platform` provides the Kafka-backed realtime backbone and topic inventory.
+- `realtime-service` is used three times for ingest, processing, and websocket gateway roles.
+- `auth0-idp` provides the single shared identity component required for externally exposed endpoints.
 
-## Responsibilities by Service
-
+## Components
 ### gatedemo-identity
-Provides the single identity provider binding required by the platform for externally exposed services. Exposes connection material for authentication and JWT validation to the ingest and gateway components.
-
-```acceptance
-service: gatedemo-identity
-criteria:
-  - id: ac-gatedemo-identity-1
-    statement: "Exactly one auth0 identity component is present for the application"
-    kind: test
-    given: "the gatedemo OAM Application is rendered"
-    when: "the component list is inspected"
-    then: "there is exactly one component of type auth0-idp named gatedemo-identity"
-```
+Provides the single shared Auth0 identity binding for exposed endpoints. Both external services reference this identity.
 
 ### gatedemo-platform
-Provides the shared realtime substrate for the pipeline, including Kafka-backed topic declarations for validated readings and sensor aggregates, plus processor intent for rolling-average computation.
-
-```acceptance
-service: gatedemo-platform
-criteria:
-  - id: ac-gatedemo-platform-1
-    statement: "The realtime platform declares the two Kafka topics needed by the pipeline"
-    kind: test
-    given: "the gatedemo OAM Application is rendered"
-    when: "the gatedemo-platform properties are inspected"
-    then: "topics gatedemo.validated.readings and gatedemo.sensor.aggregates are both declared"
-```
+Defines the shared realtime substrate and the Kafka topics used by the pipeline:
+- `gatedemo.validated-readings`
+- `gatedemo.sensor-aggregates`
 
 ### gatedemo-ingest
-Receives sensor readings over HTTP, validates them, and publishes validated readings to the Kafka topic `gatedemo.validated.readings`. Because it is externally exposed, it must reference the single `gatedemo-identity` component in both component properties and exposure trait configuration.
+Receives HTTP sensor readings, validates payloads, and publishes valid readings to `gatedemo.validated-readings`.
 
 ```acceptance
 service: gatedemo-ingest
 criteria:
-  - id: ac-gatedemo-ingest-1
-    statement: "The ingest service is externally exposed over HTTP and publishes validated readings"
+  - id: ac-ingest-1
+    statement: "valid sensor readings accepted over HTTP are published to the validated readings topic"
     kind: test
-    given: "the gatedemo OAM Application is rendered"
-    when: "the gatedemo-ingest component is inspected"
-    then: "it has role ingest, exposes /ingest publicly, sets identity to gatedemo-identity, and produces gatedemo.validated.readings"
+    given: "the gatedemo platform is running and the HTTP ingest endpoint is reachable with valid authentication"
+    when:  "a client POSTs a structurally valid sensor reading to the ingest endpoint"
+    then:  "the request succeeds and the reading is emitted to the gatedemo.validated-readings Kafka topic"
+  - id: ac-ingest-2
+    statement: "invalid sensor readings are rejected before publication"
+    kind: test
+    given: "the HTTP ingest endpoint is reachable"
+    when:  "a client POSTs an invalid or malformed sensor reading"
+    then:  "the request is rejected and no corresponding event is published to the gatedemo.validated-readings topic"
 ```
 
 ### gatedemo-processor
-Consumes validated readings from Kafka and computes a rolling average per sensor, then publishes aggregate results to `gatedemo.sensor.aggregates`. It is internal-only and therefore does not require an identity binding.
+Consumes validated readings, computes a rolling average per sensor, and publishes aggregates to `gatedemo.sensor-aggregates`.
 
 ```acceptance
 service: gatedemo-processor
 criteria:
-  - id: ac-gatedemo-processor-1
-    statement: "The processor consumes validated readings and emits per-sensor aggregates"
+  - id: ac-processor-1
+    statement: "validated readings are transformed into rolling averages per sensor"
     kind: test
-    given: "the gatedemo OAM Application is rendered"
-    when: "the gatedemo-processor component is inspected"
-    then: "it has role processor, consumes gatedemo.validated.readings, and produces gatedemo.sensor.aggregates"
+    given: "validated readings for the same sensor exist on the gatedemo.validated-readings topic"
+    when:  "the processor consumes the readings"
+    then:  "it publishes aggregate events containing the rolling average for that sensor to the gatedemo.sensor-aggregates topic"
+  - id: ac-processor-2
+    statement: "aggregation remains partitioned by sensor identity"
+    kind: test
+    given: "validated readings for multiple sensors are present on the validated readings topic"
+    when:  "the processor computes rolling averages"
+    then:  "each emitted aggregate reflects only the readings belonging to its own sensor id"
 ```
 
 ### gatedemo-gateway
-Consumes sensor aggregate events from Kafka and streams them to browser clients over websocket. Because it is externally exposed, it must reference the single `gatedemo-identity` component in both component properties and exposure trait configuration.
+Consumes aggregate events and streams them to browsers over websocket.
 
 ```acceptance
 service: gatedemo-gateway
 criteria:
-  - id: ac-gatedemo-gateway-1
-    statement: "The gateway exposes websocket streaming for aggregate updates"
+  - id: ac-gateway-1
+    statement: "aggregate events are streamed to connected websocket clients"
     kind: test
-    given: "the gatedemo OAM Application is rendered"
-    when: "the gatedemo-gateway component is inspected"
-    then: "it has role gateway, enables websocket behavior, exposes /ws publicly, sets identity to gatedemo-identity, and consumes gatedemo.sensor.aggregates"
+    given: "the websocket gateway is reachable with valid authentication and a browser client is connected"
+    when:  "a new aggregate event is published to the gatedemo.sensor-aggregates topic"
+    then:  "the connected client receives the aggregate update over the websocket stream"
+  - id: ac-gateway-2
+    statement: "websocket access is protected by the shared identity component"
+    kind: test
+    given: "a client attempts to open a websocket connection to the gateway"
+    when:  "the client does not present valid identity context"
+    then:  "the connection is denied according to the configured auth policy"
 ```
 
 ## Acceptance Criteria
-- The application reuses existing ComponentDefinitions only: `auth0-idp`, `realtime-platform`, and `realtime-service`.
-- The application contains exactly one identity component of type `auth0-idp` named `gatedemo-identity`.
-- Every externally exposed component sets `identity: gatedemo-identity` in component properties.
-- Every externally exposed component sets `identity: gatedemo-identity` on its exposure trait.
-- The ingest path is externally exposed over HTTP and publishes validated readings to `gatedemo.validated.readings`.
-- The processor consumes `gatedemo.validated.readings` and produces rolling-average aggregates on `gatedemo.sensor.aggregates`.
-- The websocket gateway consumes `gatedemo.sensor.aggregates` and exposes a browser-facing websocket stream.
-- The OAM Application validates successfully with dry-run.
+- The architecture uses existing `realtime-platform`, `realtime-service`, and `auth0-idp` ComponentDefinitions only.
+- Exactly one `auth0-idp` component is present and is referenced by each externally exposed component.
+- The HTTP ingest endpoint is externally exposed and identity-bound.
+- The websocket gateway is externally exposed and identity-bound.
+- The processor remains internal-only and does not require an identity reference.
+- Valid readings flow from HTTP ingest to `gatedemo.validated-readings`.
+- Rolling averages per sensor flow from the processor to `gatedemo.sensor-aggregates`.
+- Browser clients receive aggregate updates through the websocket gateway.
+- The realtime-service components omit the `image` property so the platform scaffolds implementation code and CI-built images.
 
 ## Non-Goals
-- Implementing application source code for ingest validation, rolling average logic, or websocket broadcasting.
-- Deploying the application to the cluster.
-- Defining browser UI behavior beyond websocket aggregate streaming.
+- Defining the application implementation code generated by the platform scaffold.
+- Defining frontend browser code.
+- Defining long-term warehouse analytics or BI dashboards.
